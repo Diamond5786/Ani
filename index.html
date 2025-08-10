@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="pageTitle">Media Share</title>
+    
+     Dynamic Open Graph Meta Tags 
+    <meta property="og:title" content="Amazing Content" id="ogTitle">
+    <meta property="og:description" content="Click to view this interesting content" id="ogDescription">
+    <meta property="og:image" content="" id="ogImage">
+    <meta property="og:url" content="" id="ogUrl">
+    <meta property="og:type" content="website">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    
+     Twitter Card Meta Tags 
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Amazing Content" id="twitterTitle">
+    <meta name="twitter:description" content="Click to view this interesting content" id="twitterDescription">
+    <meta name="twitter:image" content="" id="twitterImage">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .upload-methods {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .method-card {
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .method-card:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .method-card.active {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+
+        .method-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .method-description {
+            color: #666;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .upload-section {
+            margin-bottom: 30px;
+            display: none;
+        }
+
+        .upload-section.active {
+            display: block;
+        }
+
+        .section-title {
+            font-size: 1.3rem;
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .upload-area {
+            border: 3px dashed #ddd;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background: #fafafa;
+        }
+
+        .upload-area:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .upload-area.dragover {
+            border-color: #667eea;
+            background: #e8f2ff;
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .upload-text {
+            font-size: 1.1rem;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .url-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .url-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            margin: 5px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #28a745, #20c997);
+        }
+
+        .btn-info {
+            background: linear-gradient(135deg, #17a2b8, #6f42c1);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #ffc107, #ff8c00);
+        }
+
+        .preview-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .preview-image {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .preview-image:hover {
+            transform: scale(1.05);
+        }
+
+        .url-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: #e8f5e8;
+            border-radius: 10px;
+            border: 2px solid #28a745;
+            display: none;
+        }
+
+        .generated-url {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            font-family: monospace;
+            font-size: 0.9rem;
+            word-break: break-all;
+            margin: 10px 0;
+        }
+
+        .social-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+            justify-content: center;
+        }
+
+        .social-btn {
+            padding: 10px 20px;
+            border-radius: 25px;
+            text-decoration: none;
+            color: white;
+            font-weight: bold;
+            transition: transform 0.3s ease;
+        }
+
+        .social-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .facebook { background: #1877f2; }
+        .twitter { background: #1da1f2; }
+        .instagram { background: #e4405f; }
+        .whatsapp { background: #25d366; }
+        .telegram { background: #0088cc; }
+
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border: 1px solid #c3e6cb;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border: 1px solid #f5c6cb;
+        }
+
+        .info-box {
+            background: #e3f2fd;
+            border: 1px solid #bbdefb;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .info-box h3 {
+            color: #1976d2;
+            margin-bottom: 10px;
+        }
+
+        .info-box ul {
+            color: #424242;
+            padding-left: 20px;
+        }
+
+        .info-box li {
+            margin-bottom: 5px;
+        }
+
+        .landing-page {
+            display: none;
+            text-align: center;
+            padding: 50px 20px;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .landing-image {
+            max-width: 90%;
+            max-height: 70vh;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .landing-image:hover {
+            transform: scale(1.05);
+        }
+
+        .landing-text {
+            color: white;
+            font-size: 1.2rem;
+            margin-top: 20px;
+            opacity: 0.9;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: white;
+            font-size: 1.2rem;
+        }
+
+        .tutorial-section {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .tutorial-section h3 {
+            color: #856404;
+            margin-bottom: 15px;
+        }
+
+        .tutorial-steps {
+            color: #856404;
+        }
+
+        .tutorial-steps ol {
+            padding-left: 20px;
+        }
+
+        .tutorial-steps li {
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        .code-block {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 0.9rem;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .upload-area {
+                padding: 20px;
+            }
+
+            .upload-methods {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="mainContainer">
+        <div class="header">
+            <h1>🚀 GitHub Pages Media Tool</h1>
+            <p>Create shareable content with clean URLs</p>
+        </div>
+
+        <div class="content">
+             Image Upload Methods 
+            <div class="tutorial-section">
+                <h3>📋 GitHub पर Images Upload करने के तरीके:</h3>
+                <div class="tutorial-steps">
+                    <p><strong>Choose करें कि आप images कैसे upload करना चाहते हैं:</strong></p>
+                </div>
+            </div>
+
+            <div class="upload-methods">
+                <div class="method-card" id="method1" onclick="selectMethod(1)">
+                    <div class="method-title">🔗 1. External Image URL</div>
+                    <div class="method-description">
+                        पहले से uploaded image का URL use करें (Imgur, Google Drive, etc.)
+                        <br><strong>✅ सबसे आसान तरीका</strong>
+                    </div>
+                </div>
+
+                <div class="method-card" id="method2" onclick="selectMethod(2)">
+                    <div class="method-title">📁 2. GitHub Repository</div>
+                    <div class="method-description">
+                        Images को GitHub repository में upload करें
+                        <br><strong>✅ Permanent hosting</strong>
+                    </div>
+                </div>
+
+                <div class="method-card" id="method3" onclick="selectMethod(3)">
+                    <div class="method-title">💾 3. Temporary Upload</div>
+                    <div class="method-description">
+                        Browser में temporarily store करें
+                        <br><strong>⚠️ Temporary solution</strong>
+                    </div>
+                </div>
+
+                <div class="method-card" id="method4" onclick="selectMethod(4)">
+                    <div class="method-title">🆓 4. Free Image Hosting</div>
+                    <div class="method-description">
+                        Auto-upload to free image hosting service
+                        <br><strong>✅ Automatic hosting</strong>
+                    </div>
+                </div>
+            </div>
+
+             Method 1: External URL 
+            <div class="upload-section" id="section1">
+                <h2 class="section-title">🔗 External Image URL Method</h2>
+                <div class="info-box">
+                    <h3>कैसे करें:</h3>
+                    <ul>
+                        <li>अपनी image को Imgur, Google Drive, या कोई भी image hosting site पर upload करें</li>
+                        <li>Image का direct URL copy करें</li>
+                        <li>नीचे paste करें</li>
+                    </ul>
+                </div>
+                <input type="url" id="externalImageUrl" class="url-input" placeholder="https://i.imgur.com/your-image.jpg">
+            </div>
+
+             Method 2: GitHub Repository 
+            <div class="upload-section" id="section2">
+                <h2 class="section-title">📁 GitHub Repository Method</h2>
+                <div class="tutorial-section">
+                    <h3>Step-by-step Guide:</h3>
+                    <div class="tutorial-steps">
+                        <ol>
+                            <li>अपनी GitHub repository में जाएं</li>
+                            <li>"images" folder बनाएं (अगर नहीं है तो)</li>
+                            <li>"Add file" → "Upload files" पर click करें</li>
+                            <li>अपनी images upload करें</li>
+                            <li>Commit changes करें</li>
+                            <li>Image पर click करके "Raw" URL copy करें</li>
+                        </ol>
+                    </div>
+                    <div class="code-block">
+                        Example URL format:
+                        https://raw.githubusercontent.com/username/repo-name/main/images/your-image.jpg
+                    </div>
+                </div>
+                <input type="url" id="githubImageUrl" class="url-input" placeholder="https://raw.githubusercontent.com/username/repo/main/images/image.jpg">
+            </div>
+
+             Method 3: Temporary Upload 
+            <div class="upload-section" id="section3">
+                <h2 class="section-title">💾 Temporary Upload Method</h2>
+                <div class="info-box">
+                    <h3>⚠️ Important:</h3>
+                    <ul>
+                        <li>यह method temporary है</li>
+                        <li>Browser clear करने पर images delete हो जाएंगी</li>
+                        <li>Testing के लिए अच्छा है</li>
+                    </ul>
+                </div>
+                <div class="upload-area" id="uploadArea3">
+                    <div class="upload-icon">📁</div>
+                    <div class="upload-text">Image को यहाँ drag & drop करें या click करके select करें</div>
+                    <small style="color: #999;">JPG, PNG, GIF supported (Max: 1MB)</small>
+                    <input type="file" id="imageInput3" class="file-input" accept="image/*">
+                </div>
+            </div>
+
+             Method 4: Free Image Hosting 
+            <div class="upload-section" id="section4">
+                <h2 class="section-title">🆓 Free Image Hosting Method</h2>
+                <div class="info-box">
+                    <h3>Auto-upload to ImageBB:</h3>
+                    <ul>
+                        <li>Image automatically upload हो जाएगी</li>
+                        <li>Permanent URL मिलेगा</li>
+                        <li>Free service है</li>
+                    </ul>
+                </div>
+                <div class="upload-area" id="uploadArea4">
+                    <div class="upload-icon">☁️</div>
+                    <div class="upload-text">Image को upload करने के लिए click करें (Auto-hosting)</div>
+                    <small style="color: #999;">JPG, PNG, GIF supported (Max: 2MB)</small>
+                    <input type="file" id="imageInput4" class="file-input" accept="image/*">
+                </div>
+                <div id="uploadProgress" style="display: none; text-align: center; margin-top: 15px;">
+                    <div style="color: #667eea;">🔄 Uploading to free hosting...</div>
+                </div>
+            </div>
+
+             Common Fields 
+            <div id="commonFields" style="display: none;">
+                <div class="upload-section active">
+                    <h2 class="section-title">🔗 Target Link</h2>
+                    <input type="url" id="targetUrl" class="url-input" placeholder="https://your-target-link.com" required>
+                </div>
+
+                <div class="upload-section active">
+                    <h2 class="section-title">📝 Post Title</h2>
+                    <input type="text" id="postTitle" class="url-input" placeholder="Your attractive title..." value="Amazing Content!">
+                </div>
+
+                <div class="upload-section active">
+                    <h2 class="section-title">📄 Post Description</h2>
+                    <input type="text" id="postDescription" class="url-input" placeholder="Post description..." value="Click to view this amazing content">
+                </div>
+
+                <div style="text-align: center; margin: 30px 0;">
+                    <button class="btn" id="generateBtn" disabled>✨ Generate Shareable Link</button>
+                </div>
+            </div>
+
+             Preview Section 
+            <div class="preview-section" id="previewSection">
+                <h2 class="section-title">👀 Preview</h2>
+                <div style="text-align: center;">
+                    <img id="previewImage" class="preview-image" alt="Generated Image">
+                    <div style="margin-top: 20px;">
+                        <button class="btn btn-success" id="downloadBtn">💾 Download Image</button>
+                    </div>
+                </div>
+            </div>
+
+             URL Section 
+            <div class="url-section" id="urlSection">
+                <h2 class="section-title">🎉 Your GitHub Pages URL is Ready!</h2>
+                <p><strong>Share this clean URL on social media:</strong></p>
+                <div class="generated-url" id="generatedUrl"></div>
+                
+                <div style="text-align: center; margin: 20px 0;">
+                    <button class="btn btn-info" id="copyUrlBtn">📋 Copy URL</button>
+                    <button class="btn" id="testUrlBtn">🔍 Test URL</button>
+                    <button class="btn btn-warning" id="refreshFbBtn">🔄 Refresh Facebook Cache</button>
+                </div>
+
+                <h3 style="margin-top: 25px; text-align: center;">📱 Direct Social Media Share:</h3>
+                <div class="social-buttons" id="socialButtons"></div>
+
+                <div class="info-box" style="margin-top: 20px;">
+                    <h3>✅ GitHub Pages Benefits:</h3>
+                    <ul>
+                        <li>✅ Clean URLs (yourname.github.io/repo-name)</li>
+                        <li>✅ Free hosting forever</li>
+                        <li>✅ Custom domain support</li>
+                        <li>✅ Fast loading</li>
+                        <li>✅ SSL certificate included</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div id="messageArea"></div>
+        </div>
+    </div>
+
+     Landing Page 
+    <div class="landing-page" id="landingPage">
+        <div class="loading" id="loadingDiv">🔄 Loading...</div>
+        <div id="landingContent" style="display: none;">
+            <img id="landingImage" class="landing-image" alt="Click to continue">
+            <div class="landing-text" id="landingText">👆 Click on image to continue</div>
+        </div>
+    </div>
+
+    <script>
+        class GitHubPagesMediaTool {
+            constructor() {
+                this.selectedMethod = null;
+                this.selectedImageUrl = null;
+                this.targetUrl = document.getElementById('targetUrl');
+                this.postTitle = document.getElementById('postTitle');
+                this.postDescription = document.getElementById('postDescription');
+                this.generateBtn = document.getElementById('generateBtn');
+                this.previewSection = document.getElementById('previewSection');
+                this.previewImage = document.getElementById('previewImage');
+                this.downloadBtn = document.getElementById('downloadBtn');
+                this.urlSection = document.getElementById('urlSection');
+                this.generatedUrl = document.getElementById('generatedUrl');
+                this.copyUrlBtn = document.getElementById('copyUrlBtn');
+                this.testUrlBtn = document.getElementById('testUrlBtn');
+                this.refreshFbBtn = document.getElementById('refreshFbBtn');
+                this.socialButtons = document.getElementById('socialButtons');
+                this.messageArea = document.getElementById('messageArea');
+                this.mainContainer = document.getElementById('mainContainer');
+                this.landingPage = document.getElementById('landingPage');
+                this.landingImage = document.getElementById('landingImage');
+                this.landingText = document.getElementById('landingText');
+                this.loadingDiv = document.getElementById('loadingDiv');
+                this.landingContent = document.getElementById('landingContent');
+                this.commonFields = document.getElementById('commonFields');
+                
+                this.currentUrl = null;
+                
+                this.initEventListeners();
+                this.checkUrlParams();
+            }
+
+            initEventListeners() {
+                // Method 1: External URL
+                document.getElementById('externalImageUrl').addEventListener('input', this.handleExternalUrl.bind(this));
+                
+                // Method 2: GitHub URL
+                document.getElementById('githubImageUrl').addEventListener('input', this.handleGitHubUrl.bind(this));
+                
+                // Method 3: Temporary upload
+                document.getElementById('uploadArea3').addEventListener('click', () => document.getElementById('imageInput3').click());
+                document.getElementById('imageInput3').addEventListener('change', this.handleTempUpload.bind(this));
+                
+                // Method 4: Free hosting
+                document.getElementById('uploadArea4').addEventListener('click', () => document.getElementById('imageInput4').click());
+                document.getElementById('imageInput4').addEventListener('change', this.handleFreeHosting.bind(this));
+                
+                // Common fields
+                this.targetUrl.addEventListener('input', this.validateInputs.bind(this));
+                this.generateBtn.addEventListener('click', this.generateSocialUrl.bind(this));
+                this.downloadBtn.addEventListener('click', this.downloadImage.bind(this));
+                this.copyUrlBtn.addEventListener('click', this.copyUrl.bind(this));
+                this.testUrlBtn.addEventListener('click', this.testUrl.bind(this));
+                this.refreshFbBtn.addEventListener('click', this.refreshFacebookCache.bind(this));
+                
+                // Landing page
+                this.landingImage.addEventListener('click', this.handleLandingClick.bind(this));
+            }
+
+            checkUrlParams() {
+                const urlParams = new URLSearchParams(window.location.search);
+                const contentId = urlParams.get('share');
+
+                if (contentId) {
+                    this.loadLandingPage(contentId);
+                }
+            }
+
+            loadLandingPage(contentId) {
+                this.mainContainer.style.display = 'none';
+                this.landingPage.style.display = 'block';
+                
+                const imageUrl = localStorage.getItem(`gh_img_${contentId}`);
+                const linkData = localStorage.getItem(`gh_link_${contentId}`);
+                const titleData = localStorage.getItem(`gh_title_${contentId}`);
+                const descData = localStorage.getItem(`gh_desc_${contentId}`);
+
+                if (imageUrl && linkData) {
+                    this.showLandingContent(imageUrl, linkData, titleData, descData);
+                    this.updateMetaTags(imageUrl, linkData, titleData, descData);
+                } else {
+                    this.loadingDiv.innerHTML = '❌ Content not found or expired';
+                }
+            }
+
+            updateMetaTags(imageUrl, targetLink, title, description) {
+                const pageTitle = title || 'Amazing Content';
+                document.title = pageTitle;
+                document.getElementById('pageTitle').textContent = pageTitle;
+                
+                document.getElementById('ogTitle').setAttribute('content', title || 'Amazing Content');
+                document.getElementById('ogDescription').setAttribute('content', description || 'Click to view this amazing content');
+                document.getElementById('ogImage').setAttribute('content', imageUrl);
+                document.getElementById('ogUrl').setAttribute('content', window.location.href);
+                
+                document.getElementById('twitterTitle').setAttribute('content', title || 'Amazing Content');
+                document.getElementById('twitterDescription').setAttribute('content', description || 'Click to view this amazing content');
+                document.getElementById('twitterImage').setAttribute('content', imageUrl);
+            }
+
+            showLandingContent(imageUrl, targetLink, title, description) {
+                this.loadingDiv.style.display = 'none';
+                this.landingContent.style.display = 'block';
+                
+                this.landingImage.src = imageUrl;
+                this.landingImage.dataset.link = targetLink;
+                
+                if (title) {
+                    this.landingText.textContent = title;
+                } else {
+                    this.landingText.textContent = '👆 Click on image to continue';
+                }
+            }
+
+            handleLandingClick() {
+                const link = this.landingImage.dataset.link;
+                if (link) {
+                    window.open(link, '_blank');
+                }
+            }
+
+            handleExternalUrl() {
+                const url = document.getElementById('externalImageUrl').value.trim();
+                if (this.isValidImageUrl(url)) {
+                    this.selectedImageUrl = url;
+                    this.showPreview(url);
+                    this.validateInputs();
+                }
+            }
+
+            handleGitHubUrl() {
+                const url = document.getElementById('githubImageUrl').value.trim();
+                if (this.isValidImageUrl(url)) {
+                    this.selectedImageUrl = url;
+                    this.showPreview(url);
+                    this.validateInputs();
+                }
+            }
+
+            handleTempUpload(e) {
+                const file = e.target.files[0];
+                if (file && file.type.startsWith('image/')) {
+                    if (file.size > 1 * 1024 * 1024) {
+                        this.showMessage('Image size should be less than 1MB!', 'error');
+                        return;
+                    }
+                    
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        this.selectedImageUrl = e.target.result;
+                        this.showPreview(this.selectedImageUrl);
+                        this.validateInputs();
+                        this.showMessage('Image uploaded temporarily!', 'success');
+                    };
+                    reader.readAsDataURL(file);
+                }
+            }
+
+            async handleFreeHosting(e) {
+                const file = e.target.files[0];
+                if (!file || !file.type.startsWith('image/')) {
+                    this.showMessage('Please select a valid image file!', 'error');
+                    return;
+                }
+
+                if (file.size > 2 * 1024 * 1024) {
+                    this.showMessage('Image size should be less than 2MB!', 'error');
+                    return;
+                }
+
+                document.getElementById('uploadProgress').style.display = 'block';
+                
+                try {
+                    // Using ImgBB free API (you can replace with your preferred service)
+                    const formData = new FormData();
+                    formData.append('image', file);
+                    
+                    // Note: In production, you should use your own API key
+                    const response = await fetch('https://api.imgbb.com/1/upload?key=YOUR_API_KEY', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        this.selectedImageUrl = data.data.url;
+                        this.showPreview(this.selectedImageUrl);
+                        this.validateInputs();
+                        this.showMessage('Image uploaded to free hosting successfully!', 'success');
+                    } else {
+                        throw new Error('Upload failed');
+                    }
+                } catch (error) {
+                    // Fallback to temporary storage
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        this.selectedImageUrl = e.target.result;
+                        this.showPreview(this.selectedImageUrl);
+                        this.validateInputs();
+                        this.showMessage('Free hosting unavailable, using temporary storage!', 'error');
+                    };
+                    reader.readAsDataURL(file);
+                } finally {
+                    document.getElementById('uploadProgress').style.display = 'none';
+                }
+            }
+
+            showPreview(imageUrl) {
+                this.previewImage.src = imageUrl;
+                this.previewSection.style.display = 'block';
+            }
+
+            isValidImageUrl(url) {
+                try {
+                    new URL(url);
+                    return /\.(jpg|jpeg|png|gif|webp)$/i.test(url);
+                } catch {
+                    return false;
+                }
+            }
+
+            validateInputs() {
+                const hasImage = this.selectedImageUrl !== null;
+                const hasUrl = this.targetUrl.value.trim() !== '';
+                const isValidUrl = this.isValidURL(this.targetUrl.value.trim());
+                
+                this.generateBtn.disabled = !(hasImage && hasUrl && isValidUrl);
+                
+                if (hasUrl && !isValidUrl) {
+                    this.showMessage('Please enter a valid URL!', 'error');
+                } else if (hasImage && hasUrl && isValidUrl) {
+                    this.showMessage('Everything is ready! Generate your link.', 'success');
+                }
+            }
+
+            isValidURL(string) {
+                try {
+                    new URL(string);
+                    return true;
+                } catch (_) {
+                    return false;
+                }
+            }
+
+            generateSocialUrl() {
+                if (!this.selectedImageUrl || !this.targetUrl.value.trim()) {
+                    this.showMessage('Please provide both image and URL!', 'error');
+                    return;
+                }
+
+                const contentId = this.generateUniqueId();
+                
+                localStorage.setItem(`gh_img_${contentId}`, this.selectedImageUrl);
+                localStorage.setItem(`gh_link_${contentId}`, this.targetUrl.value.trim());
+                localStorage.setItem(`gh_title_${contentId}`, this.postTitle.value.trim());
+                localStorage.setItem(`gh_desc_${contentId}`, this.postDescription.value.trim());
+
+                this.generateCleanUrl(contentId);
+                this.showMessage('GitHub Pages URL generated successfully!', 'success');
+            }
+
+            generateUniqueId() {
+                const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+                let result = '';
+                for (let i = 0; i < 8; i++) {
+                    result += chars.charAt(Math.floor(Math.random() * chars.length));
+                }
+                return result;
+            }
+
+            generateCleanUrl(contentId) {
+                const baseUrl = window.location.origin + window.location.pathname;
+                this.currentUrl = `${baseUrl}?share=${contentId}`;
+                
+                this.generatedUrl.textContent = this.currentUrl;
+                this.urlSection.style.display = 'block';
+                this.generateSocialButtons();
+            }
+
+            generateSocialButtons() {
+                const title = this.postTitle.value.trim() || 'Amazing Content!';
+                const url = encodeURIComponent(this.currentUrl);
+                const text = encodeURIComponent(title);
+
+                const socialLinks = [
+                    {
+                        name: 'Facebook',
+                        class: 'facebook',
+                        url: `https://www.facebook.com/sharer/sharer.php?u=${url}`
+                    },
+                    {
+                        name: 'Twitter',
+                        class: 'twitter',
+                        url: `https://twitter.com/intent/tweet?text=${text}&url=${url}`
+                    },
+                    {
+                        name: 'WhatsApp',
+                        class: 'whatsapp',
+                        url: `https://wa.me/?text=${text}%20${url}`
+                    },
+                    {
+                        name: 'Telegram',
+                        class: 'telegram',
+                        url: `https://t.me/share/url?url=${url}&text=${text}`
+                    }
+                ];
+
+                this.socialButtons.innerHTML = socialLinks.map(social => 
+                    `<a href="${social.url}" target="_blank" class="social-btn ${social.class}">
+                        📱 ${social.name}
+                    </a>`
+                ).join('');
+            }
+
+            refreshFacebookCache() {
+                if (this.currentUrl) {
+                    const debugUrl = `https://developers.facebook.com/tools/debug/?q=${encodeURIComponent(this.currentUrl)}`;
+                    window.open(debugUrl, '_blank');
+                    this.showMessage('Facebook Sharing Debugger opened!', 'success');
+                }
+            }
+
+            copyUrl() {
+                if (this.currentUrl) {
+                    navigator.clipboard.writeText(this.currentUrl).then(() => {
+                        this.showMessage('URL copied successfully!', 'success');
+                    }).catch(() => {
+                        const textArea = document.createElement('textarea');
+                        textArea.value = this.currentUrl;
+                        document.body.appendChild(textArea);
+                        textArea.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(textArea);
+                        this.showMessage('URL copied!', 'success');
+                    });
+                }
+            }
+
+            testUrl() {
+                if (this.currentUrl) {
+                    window.open(this.currentUrl, '_blank');
+                }
+            }
+
+            downloadImage() {
+                if (this.selectedImageUrl) {
+                    const link = document.createElement('a');
+                    link.download = `github-pages-image-${Date.now()}.jpg`;
+                    link.href = this.selectedImageUrl;
+                    link.click();
+                    this.showMessage('Image download started!', 'success');
+                }
+            }
+
+            showMessage(message, type) {
+                this.messageArea.innerHTML = `
+                    <div class="${type}-message">
+                        ${message}
+                    </div>
+                `;
+                
+                setTimeout(() => {
+                    this.messageArea.innerHTML = '';
+                }, 5000);
+            }
+        }
+
+        // Method selection functions
+        function selectMethod(methodNumber) {
+            // Hide all sections
+            for (let i = 1; i <= 4; i++) {
+                document.getElementById(`method${i}`).classList.remove('active');
+                document.getElementById(`section${i}`).classList.remove('active');
+            }
+            
+            // Show selected method
+            document.getElementById(`method${methodNumber}`).classList.add('active');
+            document.getElementById(`section${methodNumber}`).classList.add('active');
+            document.getElementById('commonFields').style.display = 'block';
+        }
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', () => {
+            new GitHubPagesMediaTool();
+        });
+    </script>
+</body>
+</html>
