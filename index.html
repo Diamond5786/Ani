@@ -689,11 +689,25 @@
                 const titleData = localStorage.getItem(`gh_title_${contentId}`);
                 const descData = localStorage.getItem(`gh_desc_${contentId}`);
 
+                console.log('Loading content:', { imageUrl, linkData, titleData, descData });
+
                 if (imageUrl && linkData) {
-                    this.showLandingContent(imageUrl, linkData, titleData, descData);
-                    this.updateMetaTags(imageUrl, linkData, titleData, descData);
+                    // Validate that the image URL is accessible
+                    const img = new Image();
+                    img.onload = () => {
+                        this.showLandingContent(imageUrl, linkData, titleData, descData);
+                        this.updateMetaTags(imageUrl, linkData, titleData, descData);
+                    };
+                    img.onerror = () => {
+                        console.error('Image URL not accessible:', imageUrl);
+                        // Still show content but with fallback image
+                        this.showLandingContent('/placeholder.svg?height=400&width=600&text=Content+Available', linkData, titleData, descData);
+                        this.updateMetaTags('/placeholder.svg?height=400&width=600&text=Content+Available', linkData, titleData, descData);
+                    };
+                    img.src = imageUrl;
                 } else {
-                    this.loadingDiv.innerHTML = '❌ Content not found or expired';
+                    console.error('Content not found for ID:', contentId);
+                    this.loadingDiv.innerHTML = '❌ Content not found or expired<br><small>The shared content may have been removed or the link is invalid.</small>';
                 }
             }
 
@@ -715,6 +729,16 @@
             showLandingContent(imageUrl, targetLink, title, description) {
                 this.loadingDiv.style.display = 'none';
                 this.landingContent.style.display = 'block';
+                
+                this.landingImage.onload = () => {
+                    console.log('Image loaded successfully');
+                };
+                
+                this.landingImage.onerror = () => {
+                    console.error('Failed to load image:', imageUrl);
+                    this.landingImage.src = '/placeholder.svg?height=400&width=600&text=Image+Not+Found';
+                    this.landingText.textContent = 'Image could not be loaded. Click to continue anyway.';
+                };
                 
                 this.landingImage.src = imageUrl;
                 this.landingImage.dataset.link = targetLink;
@@ -820,8 +844,19 @@
             }
 
             showPreview(imageUrl) {
+                this.previewImage.onload = () => {
+                    this.previewSection.style.display = 'block';
+                    console.log('Preview image loaded successfully');
+                };
+                
+                this.previewImage.onerror = () => {
+                    console.error('Failed to load preview image:', imageUrl);
+                    this.previewImage.src = '/placeholder.svg?height=300&width=400&text=Preview+Not+Available';
+                    this.previewSection.style.display = 'block';
+                    this.showMessage('Image preview failed to load, but URL is saved', 'warning');
+                };
+                
                 this.previewImage.src = imageUrl;
-                this.previewSection.style.display = 'block';
             }
 
             isValidImageUrl(url) {
@@ -936,17 +971,58 @@
 
             copyUrl() {
                 if (this.currentUrl) {
-                    navigator.clipboard.writeText(this.currentUrl).then(() => {
-                        this.showMessage('URL copied successfully!', 'success');
-                    }).catch(() => {
-                        const textArea = document.createElement('textarea');
-                        textArea.value = this.currentUrl;
-                        document.body.appendChild(textArea);
-                        textArea.select();
-                        document.execCommand('copy');
-                        document.body.removeChild(textArea);
-                        this.showMessage('URL copied!', 'success');
-                    });
+                    if (navigator.clipboard && window.isSecureContext) {
+                        navigator.clipboard.writeText(this.currentUrl).then(() => {
+                            this.showMessage('✅ URL copied successfully!', 'success');
+                            this.copyUrlBtn.textContent = '✅ Copied!';
+                            setTimeout(() => {
+                                this.copyUrlBtn.textContent = '📋 Copy URL';
+                            }, 2000);
+                        }).catch((err) => {
+                            console.error('Clipboard API failed:', err);
+                            this.fallbackCopyTextToClipboard(this.currentUrl);
+                        });
+                    } else {
+                        this.fallbackCopyTextToClipboard(this.currentUrl);
+                    }
+                } else {
+                    this.showMessage('❌ No URL to copy!', 'error');
+                }
+            }
+
+            fallbackCopyTextToClipboard(text) {
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                textArea.style.position = 'fixed';
+                textArea.style.left = '-999999px';
+                textArea.style.top = '-999999px';
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                
+                try {
+                    const successful = document.execCommand('copy');
+                    if (successful) {
+                        this.showMessage('✅ URL copied successfully!', 'success');
+                        this.copyUrlBtn.textContent = '✅ Copied!';
+                        setTimeout(() => {
+                            this.copyUrlBtn.textContent = '📋 Copy URL';
+                        }, 2000);
+                    } else {
+                        throw new Error('Copy command failed');
+                    }
+                } catch (err) {
+                    console.error('Fallback copy failed:', err);
+                    this.showMessage('❌ Copy failed. Please select and copy the URL manually.', 'error');
+                    // Select the URL text for manual copying
+                    this.generatedUrl.style.userSelect = 'text';
+                    const range = document.createRange();
+                    range.selectNodeContents(this.generatedUrl);
+                    const selection = window.getSelection();
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                } finally {
+                    document.body.removeChild(textArea);
                 }
             }
 
