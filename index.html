@@ -333,7 +333,7 @@
             border-radius: 15px;
             box-shadow: 0 20px 40px rgba(0,0,0,0.3);
             cursor: pointer;
-            transition: transform 0.3s ease;
+            transition: transform 0.3s ease, opacity 0.3s ease;
         }
 
         .landing-image:hover {
@@ -692,23 +692,41 @@
                 console.log('Loading content:', { imageUrl, linkData, titleData, descData });
 
                 if (imageUrl && linkData) {
-                    // Validate that the image URL is accessible
-                    const img = new Image();
-                    img.onload = () => {
-                        this.showLandingContent(imageUrl, linkData, titleData, descData);
-                        this.updateMetaTags(imageUrl, linkData, titleData, descData);
-                    };
-                    img.onerror = () => {
-                        console.error('Image URL not accessible:', imageUrl);
-                        // Still show content but with fallback image
-                        this.showLandingContent('/placeholder.svg?height=400&width=600&text=Content+Available', linkData, titleData, descData);
-                        this.updateMetaTags('/placeholder.svg?height=400&width=600&text=Content+Available', linkData, titleData, descData);
-                    };
-                    img.src = imageUrl;
+                    this.validateAndLoadImage(imageUrl, linkData, titleData, descData);
                 } else {
                     console.error('Content not found for ID:', contentId);
                     this.loadingDiv.innerHTML = '❌ Content not found or expired<br><small>The shared content may have been removed or the link is invalid.</small>';
                 }
+            }
+
+            validateAndLoadImage(imageUrl, linkData, titleData, descData) {
+                // First try to load the image
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                
+                img.onload = () => {
+                    console.log('Image loaded successfully:', imageUrl);
+                    this.showLandingContent(imageUrl, linkData, titleData, descData);
+                    this.updateMetaTags(imageUrl, linkData, titleData, descData);
+                };
+                
+                img.onerror = () => {
+                    console.error('Image URL not accessible:', imageUrl);
+                    // Try with a working fallback image
+                    const fallbackImage = 'https://via.placeholder.com/600x400/667eea/ffffff?text=Click+to+Continue';
+                    this.showLandingContent(fallbackImage, linkData, titleData, descData);
+                    this.updateMetaTags(fallbackImage, linkData, titleData, descData);
+                };
+                
+                // Set a timeout for image loading
+                setTimeout(() => {
+                    if (!img.complete) {
+                        console.warn('Image loading timeout, using fallback');
+                        img.onerror();
+                    }
+                }, 5000);
+                
+                img.src = imageUrl;
             }
 
             updateMetaTags(imageUrl, targetLink, title, description) {
@@ -731,22 +749,26 @@
                 this.landingContent.style.display = 'block';
                 
                 this.landingImage.onload = () => {
-                    console.log('Image loaded successfully');
+                    console.log('Landing image loaded successfully');
+                    this.landingImage.style.opacity = '1';
                 };
                 
                 this.landingImage.onerror = () => {
-                    console.error('Failed to load image:', imageUrl);
-                    this.landingImage.src = '/placeholder.svg?height=400&width=600&text=Image+Not+Found';
-                    this.landingText.textContent = 'Image could not be loaded. Click to continue anyway.';
+                    console.error('Failed to load landing image:', imageUrl);
+                    // Use a reliable fallback image
+                    this.landingImage.src = 'https://via.placeholder.com/600x400/667eea/ffffff?text=Click+to+Continue';
+                    this.landingText.textContent = 'Content available - Click to continue';
                 };
                 
+                this.landingImage.style.opacity = '0';
+                this.landingImage.style.transition = 'opacity 0.3s ease';
                 this.landingImage.src = imageUrl;
                 this.landingImage.dataset.link = targetLink;
                 
-                if (title) {
+                if (title && title.trim()) {
                     this.landingText.textContent = title;
                 } else {
-                    this.landingText.textContent = '👆 Click on image to continue';
+                    this.landingText.textContent = 'Click to continue';
                 }
             }
 
@@ -893,22 +915,42 @@
 
             generateSocialUrl() {
                 if (!this.selectedImageUrl || !this.targetUrl.value.trim()) {
-                    this.showMessage('Please provide both image and URL!', 'error');
+                    this.showMessage('Please provide both image and target URL!', 'error');
                     return;
                 }
 
-                const contentId = this.generateUniqueId();
-                
-                localStorage.setItem(`gh_img_${contentId}`, this.selectedImageUrl);
-                localStorage.setItem(`gh_link_${contentId}`, this.targetUrl.value.trim());
-                localStorage.setItem(`gh_title_${contentId}`, this.postTitle.value.trim());
-                localStorage.setItem(`gh_desc_${contentId}`, this.postDescription.value.trim());
+                const contentId = this.generateRandomId();
+                const title = this.postTitle.value.trim() || 'Amazing Content!';
+                const description = this.postDescription.value.trim() || 'Click to view this amazing content';
+                const targetLink = this.targetUrl.value.trim();
 
-                this.generateCleanUrl(contentId);
-                this.showMessage('GitHub Pages URL generated successfully!', 'success');
+                // Validate target URL
+                try {
+                    new URL(targetLink);
+                } catch (e) {
+                    this.showMessage('Please enter a valid target URL!', 'error');
+                    return;
+                }
+
+                // Store data in localStorage with consistent keys
+                localStorage.setItem(`gh_img_${contentId}`, this.selectedImageUrl);
+                localStorage.setItem(`gh_link_${contentId}`, targetLink);
+                localStorage.setItem(`gh_title_${contentId}`, title);
+                localStorage.setItem(`gh_desc_${contentId}`, description);
+
+                const baseUrl = window.location.origin + window.location.pathname;
+                this.currentUrl = `${baseUrl}?share=${contentId}`;
+
+                this.generatedUrl.innerHTML = `<strong>${this.currentUrl}</strong>`;
+                this.urlSection.style.display = 'block';
+                this.createSocialButtons(this.currentUrl, title);
+
+                this.showMessage('✅ Shareable URL generated successfully!', 'success');
+                
+                this.urlSection.scrollIntoView({ behavior: 'smooth' });
             }
 
-            generateUniqueId() {
+            generateRandomId() {
                 const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
                 let result = '';
                 for (let i = 0; i < 8; i++) {
@@ -917,40 +959,27 @@
                 return result;
             }
 
-            generateCleanUrl(contentId) {
-                const baseUrl = window.location.origin + window.location.pathname;
-                this.currentUrl = `${baseUrl}?share=${contentId}`;
-                
-                this.generatedUrl.textContent = this.currentUrl;
-                this.urlSection.style.display = 'block';
-                this.generateSocialButtons();
-            }
-
-            generateSocialButtons() {
-                const title = this.postTitle.value.trim() || 'Amazing Content!';
-                const url = encodeURIComponent(this.currentUrl);
-                const text = encodeURIComponent(title);
-
+            createSocialButtons(url, title) {
                 const socialLinks = [
                     {
                         name: 'Facebook',
                         class: 'facebook',
-                        url: `https://www.facebook.com/sharer/sharer.php?u=${url}`
+                        url: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`
                     },
                     {
                         name: 'Twitter',
                         class: 'twitter',
-                        url: `https://twitter.com/intent/tweet?text=${text}&url=${url}`
+                        url: `https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(url)}`
                     },
                     {
                         name: 'WhatsApp',
                         class: 'whatsapp',
-                        url: `https://wa.me/?text=${text}%20${url}`
+                        url: `https://wa.me/?text=${encodeURIComponent(title)}%20${encodeURIComponent(url)}`
                     },
                     {
                         name: 'Telegram',
                         class: 'telegram',
-                        url: `https://t.me/share/url?url=${url}&text=${text}`
+                        url: `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}`
                     }
                 ];
 
@@ -970,24 +999,37 @@
             }
 
             copyUrl() {
-                if (this.currentUrl) {
-                    if (navigator.clipboard && window.isSecureContext) {
-                        navigator.clipboard.writeText(this.currentUrl).then(() => {
-                            this.showMessage('✅ URL copied successfully!', 'success');
-                            this.copyUrlBtn.textContent = '✅ Copied!';
-                            setTimeout(() => {
-                                this.copyUrlBtn.textContent = '📋 Copy URL';
-                            }, 2000);
-                        }).catch((err) => {
-                            console.error('Clipboard API failed:', err);
-                            this.fallbackCopyTextToClipboard(this.currentUrl);
-                        });
-                    } else {
-                        this.fallbackCopyTextToClipboard(this.currentUrl);
-                    }
-                } else {
+                if (!this.currentUrl) {
                     this.showMessage('❌ No URL to copy!', 'error');
+                    return;
                 }
+
+                const copyText = this.currentUrl;
+                
+                // Try modern clipboard API first
+                if (navigator.clipboard && window.isSecureContext) {
+                    navigator.clipboard.writeText(copyText).then(() => {
+                        this.showCopySuccess();
+                    }).catch((err) => {
+                        console.error('Clipboard API failed:', err);
+                        this.fallbackCopyTextToClipboard(copyText);
+                    });
+                } else {
+                    // Use fallback method
+                    this.fallbackCopyTextToClipboard(copyText);
+                }
+            }
+
+            showCopySuccess() {
+                this.showMessage('✅ URL copied successfully!', 'success');
+                const originalText = this.copyUrlBtn.textContent;
+                this.copyUrlBtn.textContent = '✅ Copied!';
+                this.copyUrlBtn.style.background = '#28a745';
+                
+                setTimeout(() => {
+                    this.copyUrlBtn.textContent = originalText;
+                    this.copyUrlBtn.style.background = '';
+                }, 2000);
             }
 
             fallbackCopyTextToClipboard(text) {
@@ -996,34 +1038,55 @@
                 textArea.style.position = 'fixed';
                 textArea.style.left = '-999999px';
                 textArea.style.top = '-999999px';
+                textArea.style.opacity = '0';
                 document.body.appendChild(textArea);
-                textArea.focus();
-                textArea.select();
                 
                 try {
+                    textArea.focus();
+                    textArea.select();
+                    textArea.setSelectionRange(0, 99999); // For mobile devices
+                    
                     const successful = document.execCommand('copy');
                     if (successful) {
-                        this.showMessage('✅ URL copied successfully!', 'success');
-                        this.copyUrlBtn.textContent = '✅ Copied!';
-                        setTimeout(() => {
-                            this.copyUrlBtn.textContent = '📋 Copy URL';
-                        }, 2000);
+                        this.showCopySuccess();
                     } else {
                         throw new Error('Copy command failed');
                     }
                 } catch (err) {
                     console.error('Fallback copy failed:', err);
-                    this.showMessage('❌ Copy failed. Please select and copy the URL manually.', 'error');
-                    // Select the URL text for manual copying
-                    this.generatedUrl.style.userSelect = 'text';
-                    const range = document.createRange();
-                    range.selectNodeContents(this.generatedUrl);
-                    const selection = window.getSelection();
-                    selection.removeAllRanges();
-                    selection.addRange(range);
+                    this.showManualCopyOption(text);
                 } finally {
                     document.body.removeChild(textArea);
                 }
+            }
+
+            showManualCopyOption(text) {
+                this.showMessage('Please copy the URL manually from below:', 'info');
+                
+                // Create a temporary input field for easy selection
+                const copyInput = document.createElement('input');
+                copyInput.type = 'text';
+                copyInput.value = text;
+                copyInput.style.width = '100%';
+                copyInput.style.padding = '10px';
+                copyInput.style.margin = '10px 0';
+                copyInput.style.border = '2px solid #667eea';
+                copyInput.style.borderRadius = '5px';
+                copyInput.readOnly = true;
+                
+                // Insert after the generated URL div
+                this.generatedUrl.parentNode.insertBefore(copyInput, this.generatedUrl.nextSibling);
+                
+                // Auto-select the text
+                copyInput.focus();
+                copyInput.select();
+                
+                // Remove after 10 seconds
+                setTimeout(() => {
+                    if (copyInput.parentNode) {
+                        copyInput.parentNode.removeChild(copyInput);
+                    }
+                }, 10000);
             }
 
             testUrl() {
